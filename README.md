@@ -1,5 +1,4 @@
-# ADDA Taller 2
+# Principals of Evolution 2023 - Transcriptomics of phenotypic plasticity 
 
-Access course website [here](https://hcliedtke.github.io/ADDA_taller2_2022/).
+### Access course website [here](https://hcliedtke.github.io/POE23_RNASEQ/).
 
-This website was generated using the [minimal theme](https://github.com/pages-themes/minimal).
