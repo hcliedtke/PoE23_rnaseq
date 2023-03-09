@@ -1,0 +1,143 @@
+---
+title: "Tidyverse and Bioconductor"
+subtitle: | 
+  PoE23: Transcriptomics of phenotypic plasticity 
+author:
+- name: "H. Christoph Liedtke"
+  affiliation: "Estación Biológica de Doñana"
+date: '2023-03-09'
+output: webexercises::webexercises_default
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      eval = FALSE,
+                      message=FALSE,
+                      error=FALSE)
+knitr::opts_knit$set(root.dir = '../')
+library(webexercises)
+```
+
+
+#### Prepare environment - pacman
+
+A good first thing to do when running any R script, is to set your working environment and load any libraries you may need. A handy tool for loading packages is [pacman](http://trinker.github.io/pacman_dev/). This package conveniently loads libraries, installs libraries that are not installed, including bioconductor packages!
+
+```{r eval=TRUE}
+# set working directory
+setwd("~/Documents/teaching/principals_of_evolution23/PoE23_rnaseq")
+
+# install pacman if not already installed
+if (!require("pacman")) install.packages("pacman")
+
+# use pacman to load libraries
+pacman::p_load(tidyverse, DESeq2)
+```
+
+
+## Background
+
+In this brief practical, we want to make sure we are all on the same page when it comes to the tidyverse and biocodunctor.
+
+## The Tidyverse
+
+> _Question:_ What is the Tidyverse? 
+ 
+ `r hide("Show Answer")`
+ 
+ ![Tidyverse image](./assets/img/tidyverse.png)
+ 
+ * [A collection of R packages](https://www.tidyverse.org/)
+ * The packages are focused on data science and they share an underlying grammar and design. In other words, they play well together!
+
+`r unhide()`
+
+Efficient data manipulation and visualization becomes increasingly important when working with large datasets. In genomics, we are often working with 10s of thousands or 100s of thousands of lines of data that need to be manipulated in R.   
+
+### Installing and using the tidyvers
+
+```{r}
+p_load(tidyverse)
+```
+
+You should see that a call to load tidyverse essentially just loads a number of "core" packages. 
+
+### My favorite functions
+
+1. The pipe! 
+
+2. Select, filter and arrange!
+
+3. mutate!
+
+4. Grouping and summarizing!
+
+5. left join, right join, full join!
+ 
+
+### Visualizing data with ggplot2
+
+A package of the tidverse that many of you may know already is `ggplot2`.  To build plots using ggplot takes three general steps.
+
+1. Create a new ggplot object
+
+```{r}
+# lets look at an internal dataset on car manufacturing information
+mpg
+
+# to build a plot we have to define two basic aspects
+# 1. what is our dataset? - defined by  "data="
+# 2. what variables do we want to plot? - defined by mapping the aesthetics, or "mapping=aes()"
+ggplot(data=mpg,
+       mapping=aes(x=displ, y=hwy))
+```
+
+2. Add plot layers
+
+Once the plot as been created, you can add any plot layer you like, using `geoms`. For example, the x and y data as points:
+
+```{r}
+ggplot(data=mpg,
+       mapping=aes(x=displ, y=hwy)) +
+  geom_point()
+```
+
+Different geoms allow for different data visualisation
+
+```{r}
+# line graph
+ggplot(data=mpg,
+       mapping=aes(x=displ, y=hwy)) +
+  geom_line()
+
+# boxplot (categorical x axis)
+ggplot(data=mpg,
+       mapping=aes(x=manufacturer, y=hwy)) +
+  geom_boxplot()
+
+# boxplot (categorical x axis)
+ggplot(data=mpg,
+       mapping=aes(x=hwy)) +
+  geom_histogram()
+```
+
+
+3. Styling visualizations
+
+Different stylings can be added at different parts of the build. 
+
+```{r}
+
+```
+
+
+
+
+
+### Final comments:
+
+* 
+
