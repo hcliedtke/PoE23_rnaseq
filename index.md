@@ -18,7 +18,7 @@ The practical sessions of this course will heavily relly on the `tidyverse` in R
 ---
 ### Pracrical sessions
 
-* _Practical:_ [01- A brief introduction to tidyverse and bioconductor](./exercises/01_explore_counts.html){:target="_blank"} [[Rmd](./exercises/01_explore_counts.Rmd)] [[answers](./exercises/answers/01_explore_counts.html)] [30 mins]
+* _Practical:_ [01- A brief introduction to the Tidyverse](./exercises/01_tidyverse.html){:target="_blank"} [[Rmd](./exercises/01_tidyverse.Rmd)] [[answers](./exercises/answers/01_tidyverse.html)] [30 mins]
 
 * _Practical:_ [01- Exploring RNAseq Counts](./exercises/01_explore_counts.html){:target="_blank"} [[Rmd](./exercises/01_explore_counts.Rmd)] [[answers](./exercises/answers/01_explore_counts.html)] [30 mins]
 
