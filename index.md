@@ -11,7 +11,7 @@ The practical sessions of this course will heavily relly on the `tidyverse` in R
 ## Workshop Outline
 
 ### Introduction
-* _Lecture:_  [Transcriptomics as a revolutionary tool for studying ecology and evolution](./lectures/intro_DEG.html){:target="_blank"}. [15 mins]
+* _Lecture:_  [Introduction to Practical](./lectures/intro_DEG/index.html){:target="_blank"}. [15 mins]
 
 ---
 ### Pracrical sessions
