@@ -1,11 +1,11 @@
 ---
 title: "Differential Gene Expression - Visualization"
 subtitle: | 
-  MADOBIS: Aplicaciones y Discusiones en Desarrollo Animal
+  PoE23: Principles of Evolution
 author:
 - name: "H. Christoph Liedtke"
   affiliation: "Estación Biológica de Doñana"
-date: '2022-04-04'
+date: '2023-03-27'
 output: webexercises::webexercises_default
 editor_options: 
   chunk_output_type: console
@@ -27,7 +27,8 @@ Set your working directory and load the libraries we will need.
 
 ```{r eval=TRUE}
 # set working directory
-setwd("~/Documents/git_projects/ADDA_taller2_2022/")
+#setwd("~/Documents/git_projects/PoE23/")
+setwd("~/Documents/teaching/principals_of_evolution23/PoE23_rnaseq/")
 
 # install pacman if not already installed
 if (!require("pacman")) install.packages("pacman")
@@ -72,8 +73,10 @@ You should also be aware that the `gene_id` column does not contain unique ident
 
 ```{r}
 xtrop<-read_csv("data/PCU23_annotations_xtr105_genes.csv")
+head(xtrop, 20)
 ```
 
+You can see here, for convenience, the Transcript IDs have been collapsed to have single lines per gene.
 
 ## Comparing sets
 
@@ -169,7 +172,102 @@ upset(fromList(sig_deg),
 
 ## Plotting fold changes
 
-### MA plot
+### Volcano plot
+
+A plot you may also have seen is a "Volcano" plot, where you are showing the log fold change plotted against the adjusted p-values per gene. To make small p-values very large, the p-values are usually -log10() transformed. The most basic plot would look like this:
+
+```{r}
+res$bD_bV %>%
+  as_tibble(rownames = "gene_id") %>%
+  ggplot(aes(x=log2FoldChange, y=-log10(padj))) +
+  geom_point(alpha=0.75, shape=16)
+```
+
+However, we want to squeeze as much information out of it as possible, so we will add the following:
+
+* Remove all points that are far from being significant.
+* Colour-code points that fall within the bounds of our significance thresholds (padj<0.05 and absolute log fold change > 2)
+* add annotations to the points (Gene IDs and the gene descriptions)
+* plot all comparisons together
+* make the plot interactive!
+
+```{r}
+gg_res <- res %>%
+  lapply(as_tibble,rownames = "gene_id") %>%
+  bind_rows(.id="comparison") %>%
+  drop_na(padj) %>% # drop all genes with NAs
+  filter(padj<0.5) %>% # reduce the number of points that need to be plotted
+  mutate(sig= padj<0.05 & abs(log2FoldChange)>=2) %>% # make a variable to indicate if a gene is significant based on a specific thresholds
+  left_join(xtrop, by=c("gene_id")) %>% # add annotations
+  ggplot(aes(x=log2FoldChange, y=-log10(padj), color=sig,
+            text=paste0("</br>Pcu23 gene: ", gene_id,
+                        "</br>Pcu23 peptide: ", pep_description,
+                       "</br>X.tr peptide: ", xtr_pep_name_x
+                       )
+         )) +
+  geom_point(alpha=0.75, shape=16) +
+  facet_wrap(~comparison, ncol = 2, scales = "free") +
+  xlim(-15,15) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+gg_res
+
+# we can now turn this into an interactive plot:
+ggplotly(gg_res, tooltip="text")
+```
+
+> _Question:_ What gene are positively differentially expressed when comparing the black vs. the white dorsal tissue?
+
+`r hide("Show Answer")`
+* Seleno W
+* OX-2 membrane glyco-like
+* oca2
+* PMEL
+
+_Some other comments:_
+
+* Remember, the second contrast is always the reference, or baseline. This means, that `wD` (white dorsal) is the reference, and so a positive fold change means genes are over-expressed in the _treatment_, which is the black dorsal tissue. 
+* Notice also that some of them are missing annotations... is this a problem?
+* If we wanted to know more about the function of these genes, we need to turn to online references, such as UNIPROT, e.g. [PMEL](https://www.uniprot.org/uniprot/P40967)
+`r unhide()`
+
+We could also make publication-ready, static plots with annotations of specific genes. For example, all the significant DEGs for the black dorsal vs. white dorsal.
+
+```{r}
+res$bD_wD %>%
+  as_tibble(rownames = "gene_id") %>%
+  drop_na(padj) %>% # drop all genes with NAs
+  #filter(padj<0.99) %>% # reduce the number of points that need to be plotted
+  mutate(sig= padj<0.05 & abs(log2FoldChange)>=2) %>% # make a variable to indicate if a gene is significant based on a specific thresholds
+  left_join(xtrop, by=c("gene_id")) %>% # add annotations
+  filter(padj<0.5) %>%
+  ggplot(aes(x=log2FoldChange, y=-log10(padj), color=sig)) +
+  geom_point(alpha=0.75, shape=16) +
+  geom_text_repel(data=. %>% filter(sig),
+                  aes(label=xtr_pep_name_x),
+                  max.overlaps = 50,
+                  size=2) +
+  xlim(-10,10) +
+  ggtitle("DEGs in Black Dorsal Skin in Comparison to White Dorsal Skin") +
+  theme_bw() +
+  theme(legend.position = "none")
+```
+
+> _Question:_ What have we learned about the gene expression that controls pigemnation plasticity in dorsal skin of these tadpoles?
+
+`r hide("Show Answer")`
+
+Just some of the many answers:
+
+* Pigmentation changes involve melanosome biogeneis (pmel, oca2, mlana).
+* It also involves carotenoids! (bco2l)
+* There are many differentially expressed genes which may be important, but they are not annotated.
+
+`r unhide()`
+
+
+## Extras - Shrinking the MA plot
 
 In the previous exercise, we looked at MA-plots. We used them mostly as a diagnostic plot, but very often, you will also see them in publications, to display a ratio of gene expression (the fold change) against the mean expression of that gene (base mean). Let's quickly remind us what this looks like:
 
@@ -233,93 +331,3 @@ par(mfrow=c(1,1))
 `r unhide()`
 
 
-### Volcano plot
-
-A plot you may also have seen is a "Volcano" plot, where you are showing the log fold change plotted against the adjusted p-values per gene. To make small p-values very large, the p-values are usually -log10() transformed. The most basic plot would look like this:
-
-```{r}
-res$bD_bV %>%
-  as_tibble(rownames = "gene_id") %>%
-  ggplot(aes(x=log2FoldChange, y=-log10(padj))) +
-  geom_point(alpha=0.75, shape=16)
-```
-
-However, we want to squeeze as much information out of it as possible, so we will add the following:
-
-* Remove all points that are far from being significant.
-* Colour-code points that fall within the bounds of our significance thresholds (padj<0.05 and absolute log fold change > 2)
-* add annotations to the points (Gene IDs and the gene descriptions)
-* plot all comparisons together
-* make the plot interactive!
-
-```{r}
-gg_res <- res %>%
-  lapply(as_tibble,rownames = "gene_id") %>%
-  bind_rows(.id="comparison") %>%
-  drop_na(padj) %>% # drop all genes with NAs
-  filter(padj<0.5) %>% # reduce the number of points that need to be plotted
-  mutate(sig= padj<0.05 & abs(log2FoldChange)>=2) %>% # make a variable to indicate if a gene is significant based on a specific thresholds
-  left_join(xtrop, by=c("gene_id")) %>% # add annotations
-  ggplot(aes(x=log2FoldChange, y=-log10(padj), color=sig,
-            text=paste0("</br>Pcu23 gene: ", gene_id,
-                        "</br>Pcu23 peptide: ", pep_description,
-                       "</br>X.tr peptide: ", xtr_pep_name_x
-                       )
-         )) +
-  geom_point(alpha=0.75, shape=16) +
-  facet_wrap(~comparison, ncol = 2, scales = "free") +
-  xlim(-15,15) +
-  theme_minimal() +
-  theme(legend.position = "none")
-
-ggplotly(gg_res, tooltip="text")
-```
-
-> _Question:_ What gene are positively differentially expressed when comparing the black vs. the white dorsal tissue?
-
-`r hide("Show Answer")`
-* Seleno W
-* OX-2 membrane glyco-like
-* oca2
-* PMEL
-
-_Some other comments:_
-
-* Remember, the second contrast is always the reference, or baseline. This means, that `wD` (white dorsal) is the reference, and so a positive fold change means genes are over-expressed in the _treatment_, which is the black dorsal tissue. 
-* Notice also that some of them are missing annotations... is this a problem?
-* If we wanted to know more about the function of these genes, we need to turn to online references, such as UNIPROT, e.g. [PMEL](https://www.uniprot.org/uniprot/P40967)
-`r unhide()`
-
-We could also make publication-ready, static plots with annotations of specific genes. For example, all the significant DEGs for the black dorsal vs. white dorsal.
-
-```{r}
-res$bD_wD %>%
-  as_tibble(rownames = "gene_id") %>%
-  drop_na(padj) %>% # drop all genes with NAs
-  #filter(padj<0.99) %>% # reduce the number of points that need to be plotted
-  mutate(sig= padj<0.05 & abs(log2FoldChange)>=2) %>% # make a variable to indicate if a gene is significant based on a specific thresholds
-  left_join(xtrop, by=c("gene_id")) %>% # add annotations
-  filter(padj<0.5) %>%
-  ggplot(aes(x=log2FoldChange, y=-log10(padj), color=sig)) +
-  geom_point(alpha=0.75, shape=16) +
-  geom_text_repel(data=. %>% filter(sig),
-                  aes(label=xtr_pep_name_x),
-                  max.overlaps = 50,
-                  size=2) +
-  xlim(-10,10) +
-  ggtitle("DEGs in Black Dorsal Skin in Comparison to White Dorsal Skin") +
-  theme_bw() +
-  theme(legend.position = "none")
-```
-
-> _Question:_ What have we learned about the gene expression that controls pigemnation plasticity in dorsal skin of these tadpoles?
-
-`r hide("Show Answer")`
-
-Just some of the many answers:
-
-* Pigmentation changes involve melanosome biogeneis (pmel, oca2, mlana).
-* It also involves carotenoids! (bco2l)
-* There are many differentially expressed genes which may be important, but they are not annotated.
-
-`r unhide()`

@@ -1,11 +1,11 @@
 ---
 title: "Exploring RNA-Seq Count Data"
 subtitle: | 
-  MADOBIS: Aplicaciones y Discusiones en Desarrollo Animal
+  PoE23: Principles of Evolution
 author:
 - name: "H. Christoph Liedtke"
   affiliation: "Estación Biológica de Doñana"
-date: '2022-04-04'
+date: '2023-03-27'
 output: webexercises::webexercises_default
 editor_options: 
   chunk_output_type: console
@@ -28,7 +28,8 @@ A good first thing to do when running any R script, is to set your working envir
 
 ```{r eval=TRUE}
 # set working directory
-setwd("~/Documents/git_projects/ADDA_taller2_2022/")
+#setwd("~/Documents/git_projects/PoE23/")
+setwd("~/Documents/teaching/principals_of_evolution23/PoE23_rnaseq/")
 
 # install pacman if not already installed
 if (!require("pacman")) install.packages("pacman")
@@ -68,11 +69,12 @@ For those of you unfamiliar, `.rds` files is a single R data object, created wit
 
 ## Exploring the loaded data
 
-> _Question:_ What does this data object you just imported contain? 
+> _Question:_ What does is the class and structure of this data object? 
 
 `r hide("Show Answer")`
 
 ```{r}
+class(txi)
 str(txi)
 lapply(X=txi, FUN=head)
 ```
@@ -81,11 +83,12 @@ lapply(X=txi, FUN=head)
 
 `r unhide()`
  
-> _Question:_ What is the content of this object?
+> _Question:_ What is the content of this object and how is it arranged?
  
  `r hide("Show Answer")`
- * The arrays have target transcripts as rows and biological samples per column.
- * Abundance: Abundance calculations from the quantifier (salmon). According to the [salmon documentions](https://salmon.readthedocs.io/en/latest/file_formats.html), this is TPM. We could check this be making sure columns add up to 1 million:
+ * All three arrays have target transcripts as rows and biological samples per column.
+ * Counts: estimate of the number of reads mapping to each transcript.
+ * Abundance: Raw counts cannot be compared across samples because each library may vary slightly in terms of the total number of reads, differences in sequencing bias and difference in transcript lengths. Salmon (the program we used to quantify reads) also produces an array of "Abundances" which are normalized counts. According to the [salmon documention](https://salmon.readthedocs.io/en/latest/file_formats.html), this is Transcripts Per Million (TPM). This bastically means that per sample, the total counts add up to 1 million. We could check this:
       
 ```{r}
 apply(X=txi$abundance, FUN=sum, MARGIN = 2)
@@ -93,7 +96,7 @@ apply(X=txi$abundance, FUN=sum, MARGIN = 2)
 
 In this case, they don't quite add up to 1 million because I have already filtered this matrix, to remove non-coding and mitochondrial DNA.
     
-* counts: estimate of the number of reads mapping to each transcript.
+
 * length: effective length of the target transcript.
 * countsFromAbundance: a character vector indicating whether counts were taken directly from the quantifier (salmon) or whether they have been calculated from the abundances by `tximport`. Default is no (counts are from salmon).
 
@@ -117,13 +120,13 @@ head(txi$length[1:5,])
 
 `r unhide()`
 
-It is also a good idea to look at distributions of data:
+It is always a good idea to look at the distribution of data:
 
 ```{r}
-# with base R:
+# Log10 transform and plot with base R:
 hist(log10(txi$abundance[,1]), breaks=50)
 
-# with the tidyverse:
+# a more detailed plot with the tidyverse:
 txi$abundance %>%
   as_tibble(rownames = "transcript") %>%
   pivot_longer(-transcript, names_to="sample", values_to="TPM") %>%
@@ -188,6 +191,8 @@ pca$x %>%
   as_tibble(rownames = "sample_id") %>%
   left_join(samples) %>% # add the experimental design information
   ggplot(aes(x=PC1, y=PC2, color=treatment, shape=tissue)) +
+  labs(x=paste0("PC1 (", summary(pca)$importance["Proportion of Variance",1]*100, "%)"),
+       y=paste("PC2 (", summary(pca)$importance["Proportion of Variance",2]*100, "%)")) + 
   geom_point(size=3)
 ```
 
@@ -196,7 +201,7 @@ pca$x %>%
 `r hide("Show Answer")`
 * Most of the variance is explained by tissue type.
 * Treatment effect is not so clear.
-* There is much more variance within the skin samples than within the liver samples. This can be problematic for differential gene expression analyses.
+* There may be more variance within the liver samples than within the skin samples. This is something to keep an eye on as it may cause problems for downstream analyses.
 
 `r unhide()`
 
@@ -243,7 +248,16 @@ pca_liver$x %>%
 `r unhide()`
 
 
-## Visualize your count data: Heatmaps
+## Final comments:
+
+* It is important to spend some time looking at your data! Nowadays there are many pipelines that will process the whole RNAseq workflow from start to finish, but don't forget to actually look at your results in detail.
+* It is important to think about what comparisons you are trying to make. Here, we saw that the tissue effect is much stronger than the treatment effect. Unless it is a specific aim of yours to compare across tissues, you may want to run your analysis on each tissue independently.
+* Here, we explore patterns in gene expression, but we do not apply any specific tests. More importantly, we are using counts that have been normalized _within_ samples (TPM). It is generally adviced that these are not reliable when comparing _across_ samples! (We will come back to this in the next exercise).
+* There are many sources of information online. A practical guide that may be useful is the `Computational Genomics with R` [book](http://compgenomr.github.io/book/), especially the chapter on [RNA-Seq](http://compgenomr.github.io/book/rnaseqanalysis.html) by Bora Uyar. Galazy also has plenty of interesting documentation such as [this one](https://training.galaxyproject.org/training-material/topics/transcriptomics/tutorials/rb-rnaseq/tutorial.html).
+
+
+
+## Extras - Visualize your count data with heatmaps
 
 Another common visualization technique are heatmaps. Surely you have seen them in many publications. The PCA is useful for visualizing the clustering of samples. Heatmaps can do the same, but they can add one extra layer of information: the clustering of genes. Let's look at both:
 
@@ -302,12 +316,5 @@ pheatmap(tpm_subset,
 * The 8Li sample is a clear outlier. It might be worth checking that sample more closely
 
 `r unhide()`
-
-### Final comments:
-
-* It is important to spend some time looking at your data! Nowadays there are many pipelines that will process the whole RNAseq workflow from start to finish, but don't forget to actually look at your results in detail.
-* It is important to think about what comparisons you are trying to make. Here, we saw that the tissue effect is much stronger than the treatment effect. Unless it is a specific aim of yours to compare across tissues, you may want to run your analysis on each tissue independently.
-* Here, we explore patterns in gene expression, but we do not apply any specific tests. More importantly, we are using counts that have been normalized _within_ samples (TPM). It is generally adviced that these are not reliable when comparing _across_ samples! (We will come back to this in the next exercise).
-* There are many sources of information online. A practical guide that may be useful is the `Computational Genomics with R` [book](http://compgenomr.github.io/book/), especially the chapter on [RNA-Seq](http://compgenomr.github.io/book/rnaseqanalysis.html) by Bora Uyar. Galazy also has plenty of interesting documentation such as [this one](https://training.galaxyproject.org/training-material/topics/transcriptomics/tutorials/rb-rnaseq/tutorial.html).
 
 
